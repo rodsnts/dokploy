@@ -1,3 +1,4 @@
+import { getEnvWithDopplerSecrets } from "@dokploy/server/services/doppler";
 import type { InferResultType } from "@dokploy/server/types/with";
 import type { CreateServiceOptions } from "dockerode";
 import {
@@ -79,8 +80,14 @@ fi
 
 ${command ?? "wait $MONGOD_PID"}`;
 
+	const envWithDoppler = await getEnvWithDopplerSecrets(
+		mongo,
+		mongo.environment,
+		mongo.environment.project,
+	);
+
 	const defaultMongoEnv = `MONGO_INITDB_ROOT_USERNAME="${databaseUser}"\nMONGO_INITDB_ROOT_PASSWORD="${databasePassword}"${replicaSets ? "\nMONGO_INITDB_DATABASE=admin" : ""}${
-		env ? `\n${env}` : ""
+		envWithDoppler ? `\n${envWithDoppler}` : ""
 	}`;
 
 	const {

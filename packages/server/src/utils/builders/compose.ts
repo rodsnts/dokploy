@@ -1,5 +1,6 @@
 import { dirname, join } from "node:path";
 import { paths } from "@dokploy/server/constants";
+import { getEnvWithDopplerSecrets } from "@dokploy/server/services/doppler";
 import type { InferResultType } from "@dokploy/server/types/with";
 import boxen from "boxen";
 import { quote } from "shell-quote";
@@ -18,10 +19,22 @@ export type ComposeNested = InferResultType<
 export const getBuildComposeCommand = async (compose: ComposeNested) => {
 	const { COMPOSE_PATH } = paths(!!compose.serverId);
 	const { sourceType, appName, mounts, composeType, domains } = compose;
+
+	const envWithDoppler = await getEnvWithDopplerSecrets(
+		compose,
+		compose.environment,
+		compose.environment.project,
+	);
+
+	const composeWithDopplerEnv = {
+		...compose,
+		env: envWithDoppler,
+	};
+
 	const command = createCommand(compose);
-	const envCommand = getCreateEnvFileCommand(compose);
+	const envCommand = getCreateEnvFileCommand(composeWithDopplerEnv);
 	const projectPath = join(COMPOSE_PATH, compose.appName, "code");
-	const exportEnvCommand = getExportEnvCommand(compose);
+	const exportEnvCommand = getExportEnvCommand(composeWithDopplerEnv);
 
 	const newCompose = await writeDomainsToCompose(compose, domains);
 	const logContent = `

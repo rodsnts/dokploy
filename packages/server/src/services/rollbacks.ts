@@ -20,6 +20,7 @@ import { execAsync, execAsyncRemote } from "../utils/process/execAsync";
 import { getRemoteDocker } from "../utils/servers/remote-docker";
 import { type Application, findApplicationById } from "./application";
 import { findDeploymentById } from "./deployment";
+import { getEnvWithDopplerSecrets } from "./doppler";
 import type { Mount } from "./mount";
 import type { Port } from "./port";
 import type { Project } from "./project";
@@ -223,8 +224,15 @@ const rollbackApplication = async (
 	} = generateConfigContainer(fullContext as ApplicationNested);
 
 	const bindsMount = generateBindMounts(mounts);
+
+	const envWithDoppler = await getEnvWithDopplerSecrets(
+		fullContext,
+		undefined,
+		fullContext.environment.project,
+	);
+
 	const envVariables = prepareEnvironmentVariables(
-		env,
+		envWithDoppler,
 		fullContext.environment.project.env,
 	);
 

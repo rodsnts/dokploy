@@ -1,3 +1,4 @@
+import { getEnvWithDopplerSecrets } from "@dokploy/server/services/doppler";
 import type { InferResultType } from "@dokploy/server/types/with";
 import type { CreateServiceOptions } from "dockerode";
 import {
@@ -33,8 +34,14 @@ export const buildMariadb = async (mariadb: MariadbNested) => {
 		mounts,
 	} = mariadb;
 
+	const envWithDoppler = await getEnvWithDopplerSecrets(
+		mariadb,
+		mariadb.environment,
+		mariadb.environment.project,
+	);
+
 	const defaultMariadbEnv = `MARIADB_DATABASE="${databaseName}"\nMARIADB_USER="${databaseUser}"\nMARIADB_PASSWORD="${databasePassword}"\nMARIADB_ROOT_PASSWORD="${databaseRootPassword}"${
-		env ? `\n${env}` : ""
+		envWithDoppler ? `\n${envWithDoppler}` : ""
 	}`;
 
 	const {

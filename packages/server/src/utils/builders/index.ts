@@ -1,5 +1,6 @@
 import type { InferResultType } from "@dokploy/server/types/with";
 import type { CreateServiceOptions } from "dockerode";
+import { getEnvWithDopplerSecrets } from "../../services/doppler";
 import { getRegistryTag, uploadImageRemoteCommand } from "../cluster/upload";
 import {
 	calculateResources,
@@ -39,26 +40,37 @@ export type ApplicationNested = InferResultType<
 export const getBuildCommand = async (application: ApplicationNested) => {
 	let command = "";
 
+	const envWithDoppler = await getEnvWithDopplerSecrets(
+		application,
+		application.environment,
+		application.environment.project,
+	);
+
+	const appWithDopplerEnv = {
+		...application,
+		env: envWithDoppler,
+	};
+
 	if (application.sourceType !== "docker") {
 		const { buildType } = application;
 		switch (buildType) {
 			case "nixpacks":
-				command = getNixpacksCommand(application);
+				command = getNixpacksCommand(appWithDopplerEnv);
 				break;
 			case "heroku_buildpacks":
-				command = getHerokuCommand(application);
+				command = getHerokuCommand(appWithDopplerEnv);
 				break;
 			case "paketo_buildpacks":
-				command = getPaketoCommand(application);
+				command = getPaketoCommand(appWithDopplerEnv);
 				break;
 			case "static":
-				command = getStaticCommand(application);
+				command = getStaticCommand(appWithDopplerEnv);
 				break;
 			case "dockerfile":
-				command = getDockerCommand(application);
+				command = getDockerCommand(appWithDopplerEnv);
 				break;
 			case "railpack":
-				command = getRailpackCommand(application);
+				command = getRailpackCommand(appWithDopplerEnv);
 				break;
 		}
 	}
@@ -114,8 +126,15 @@ export const mechanizeDockerContainer = async (
 
 	const bindsMount = generateBindMounts(mounts);
 	const filesMount = generateFileMounts(appName, application);
+
+	const serviceEnvWithDoppler = await getEnvWithDopplerSecrets(
+		application,
+		application.environment,
+		application.environment.project,
+	);
+
 	const envVariables = prepareEnvironmentVariables(
-		env,
+		serviceEnvWithDoppler,
 		application.environment.project.env,
 		application.environment.env,
 	);

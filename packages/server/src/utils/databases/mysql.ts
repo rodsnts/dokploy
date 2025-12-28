@@ -1,3 +1,4 @@
+import { getEnvWithDopplerSecrets } from "@dokploy/server/services/doppler";
 import type { InferResultType } from "@dokploy/server/types/with";
 import type { CreateServiceOptions } from "dockerode";
 import {
@@ -34,13 +35,19 @@ export const buildMysql = async (mysql: MysqlNested) => {
 		mounts,
 	} = mysql;
 
+	const envWithDoppler = await getEnvWithDopplerSecrets(
+		mysql,
+		mysql.environment,
+		mysql.environment.project,
+	);
+
 	const defaultMysqlEnv =
 		databaseUser !== "root"
 			? `MYSQL_USER="${databaseUser}"\nMYSQL_DATABASE="${databaseName}"\nMYSQL_PASSWORD="${databasePassword}"\nMYSQL_ROOT_PASSWORD="${databaseRootPassword}"${
-					env ? `\n${env}` : ""
+					envWithDoppler ? `\n${envWithDoppler}` : ""
 				}`
 			: `MYSQL_DATABASE="${databaseName}"\nMYSQL_ROOT_PASSWORD="${databaseRootPassword}"${
-					env ? `\n${env}` : ""
+					envWithDoppler ? `\n${envWithDoppler}` : ""
 				}`;
 
 	const {

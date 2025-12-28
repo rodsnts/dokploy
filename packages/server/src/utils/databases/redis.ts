@@ -1,3 +1,4 @@
+import { getEnvWithDopplerSecrets } from "@dokploy/server/services/doppler";
 import type { InferResultType } from "@dokploy/server/types/with";
 import type { CreateServiceOptions } from "dockerode";
 import {
@@ -30,8 +31,14 @@ export const buildRedis = async (redis: RedisNested) => {
 		mounts,
 	} = redis;
 
+	const envWithDoppler = await getEnvWithDopplerSecrets(
+		redis,
+		redis.environment,
+		redis.environment.project,
+	);
+
 	const defaultRedisEnv = `REDIS_PASSWORD="${databasePassword}"${
-		env ? `\n${env}` : ""
+		envWithDoppler ? `\n${envWithDoppler}` : ""
 	}`;
 
 	const {

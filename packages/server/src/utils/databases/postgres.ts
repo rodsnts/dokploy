@@ -1,3 +1,4 @@
+import { getEnvWithDopplerSecrets } from "@dokploy/server/services/doppler";
 import type { InferResultType } from "@dokploy/server/types/with";
 import type { CreateServiceOptions } from "dockerode";
 import {
@@ -32,8 +33,14 @@ export const buildPostgres = async (postgres: PostgresNested) => {
 		mounts,
 	} = postgres;
 
+	const envWithDoppler = await getEnvWithDopplerSecrets(
+		postgres,
+		postgres.environment,
+		postgres.environment.project,
+	);
+
 	const defaultPostgresEnv = `POSTGRES_DB="${databaseName}"\nPOSTGRES_USER="${databaseUser}"\nPOSTGRES_PASSWORD="${databasePassword}"${
-		env ? `\n${env}` : ""
+		envWithDoppler ? `\n${envWithDoppler}` : ""
 	}`;
 
 	const {
