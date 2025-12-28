@@ -11,6 +11,7 @@ import { deploymentRouter } from "./routers/deployment";
 import { destinationRouter } from "./routers/destination";
 import { dockerRouter } from "./routers/docker";
 import { domainRouter } from "./routers/domain";
+import { dopplerRouter } from "./routers/doppler";
 import { environmentRouter } from "./routers/environment";
 import { gitProviderRouter } from "./routers/git-provider";
 import { giteaRouter } from "./routers/gitea";
@@ -59,6 +60,7 @@ export const appRouter = createTRPCRouter({
 	user: userRouter,
 	domain: domainRouter,
 	destination: destinationRouter,
+	doppler: dopplerRouter,
 	backup: backupRouter,
 	deployment: deploymentRouter,
 	previewDeployment: previewDeploymentRouter,
