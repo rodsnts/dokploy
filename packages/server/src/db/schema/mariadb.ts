@@ -1,5 +1,12 @@
 import { relations } from "drizzle-orm";
-import { bigint, integer, json, pgTable, text } from "drizzle-orm/pg-core";
+import {
+	bigint,
+	boolean,
+	integer,
+	json,
+	pgTable,
+	text,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { nanoid } from "nanoid";
 import { z } from "zod";
@@ -9,6 +16,7 @@ import { mounts } from "./mount";
 import { server } from "./server";
 import {
 	applicationStatus,
+	dopplerMergeStrategy,
 	type EndpointSpecSwarm,
 	EndpointSpecSwarmSchema,
 	type HealthCheckSwarm,
@@ -78,6 +86,14 @@ export const mariadb = pgTable("mariadb", {
 	serverId: text("serverId").references(() => server.serverId, {
 		onDelete: "cascade",
 	}),
+	dopplerEnabled: boolean("dopplerEnabled").default(false),
+	dopplerServiceToken: text("dopplerServiceToken"),
+	dopplerProject: text("dopplerProject"),
+	dopplerConfig: text("dopplerConfig"),
+	dopplerMergeStrategy: dopplerMergeStrategy("dopplerMergeStrategy").default(
+		"doppler_priority",
+	),
+	dopplerLastSyncAt: text("dopplerLastSyncAt"),
 });
 
 export const mariadbRelations = relations(mariadb, ({ one, many }) => ({
@@ -136,6 +152,19 @@ const createSchema = createInsertSchema(mariadb, {
 	networkSwarm: NetworkSwarmSchema.nullable(),
 	stopGracePeriodSwarm: z.bigint().nullable(),
 	endpointSpecSwarm: EndpointSpecSwarmSchema.nullable(),
+	dopplerEnabled: z.boolean().optional(),
+	dopplerServiceToken: z.string().optional(),
+	dopplerProject: z.string().optional(),
+	dopplerConfig: z.string().optional(),
+	dopplerMergeStrategy: z
+		.enum([
+			"doppler_priority",
+			"manual_priority",
+			"doppler_only",
+			"manual_only",
+		])
+		.optional(),
+	dopplerLastSyncAt: z.string().optional(),
 });
 
 export const apiCreateMariaDB = createSchema

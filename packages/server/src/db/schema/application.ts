@@ -28,6 +28,7 @@ import { server } from "./server";
 import {
 	applicationStatus,
 	certificateType,
+	dopplerMergeStrategy,
 	type EndpointSpecSwarm,
 	EndpointSpecSwarmSchema,
 	type HealthCheckSwarm,
@@ -221,6 +222,14 @@ export const applications = pgTable("application", {
 			onDelete: "set null",
 		},
 	),
+	dopplerEnabled: boolean("dopplerEnabled").default(false),
+	dopplerServiceToken: text("dopplerServiceToken"),
+	dopplerProject: text("dopplerProject"),
+	dopplerConfig: text("dopplerConfig"),
+	dopplerMergeStrategy: dopplerMergeStrategy("dopplerMergeStrategy").default(
+		"doppler_priority",
+	),
+	dopplerLastSyncAt: text("dopplerLastSyncAt"),
 });
 
 export const applicationsRelations = relations(
@@ -358,6 +367,19 @@ const createSchema = createInsertSchema(applications, {
 	cleanCache: z.boolean().optional(),
 	stopGracePeriodSwarm: z.bigint().nullable(),
 	endpointSpecSwarm: EndpointSpecSwarmSchema.nullable(),
+	dopplerEnabled: z.boolean().optional(),
+	dopplerServiceToken: z.string().optional(),
+	dopplerProject: z.string().optional(),
+	dopplerConfig: z.string().optional(),
+	dopplerMergeStrategy: z
+		.enum([
+			"doppler_priority",
+			"manual_priority",
+			"doppler_only",
+			"manual_only",
+		])
+		.optional(),
+	dopplerLastSyncAt: z.string().optional(),
 });
 
 export const apiCreateApplication = createSchema.pick({

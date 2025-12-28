@@ -1,10 +1,11 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text } from "drizzle-orm/pg-core";
+import { boolean, pgTable, text } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { organization } from "./account";
 import { environments } from "./environment";
+import { dopplerMergeStrategy } from "./shared";
 
 export const projects = pgTable("project", {
 	projectId: text("projectId")
@@ -21,6 +22,14 @@ export const projects = pgTable("project", {
 		.notNull()
 		.references(() => organization.id, { onDelete: "cascade" }),
 	env: text("env").notNull().default(""),
+	dopplerEnabled: boolean("dopplerEnabled").default(false),
+	dopplerServiceToken: text("dopplerServiceToken"),
+	dopplerProject: text("dopplerProject"),
+	dopplerConfig: text("dopplerConfig"),
+	dopplerMergeStrategy: dopplerMergeStrategy("dopplerMergeStrategy").default(
+		"doppler_priority",
+	),
+	dopplerLastSyncAt: text("dopplerLastSyncAt"),
 });
 
 export const projectRelations = relations(projects, ({ many, one }) => ({
@@ -35,6 +44,19 @@ const createSchema = createInsertSchema(projects, {
 	projectId: z.string().min(1),
 	name: z.string().min(1),
 	description: z.string().optional(),
+	dopplerEnabled: z.boolean().optional(),
+	dopplerServiceToken: z.string().optional(),
+	dopplerProject: z.string().optional(),
+	dopplerConfig: z.string().optional(),
+	dopplerMergeStrategy: z
+		.enum([
+			"doppler_priority",
+			"manual_priority",
+			"doppler_only",
+			"manual_only",
+		])
+		.optional(),
+	dopplerLastSyncAt: z.string().optional(),
 });
 
 export const apiCreateProject = createSchema.pick({

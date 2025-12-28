@@ -14,7 +14,7 @@ import { gitlab } from "./gitlab";
 import { mounts } from "./mount";
 import { schedules } from "./schedule";
 import { server } from "./server";
-import { applicationStatus, triggerType } from "./shared";
+import { applicationStatus, dopplerMergeStrategy, triggerType } from "./shared";
 import { sshKeys } from "./ssh-key";
 import { generateAppName } from "./utils";
 export const sourceTypeCompose = pgEnum("sourceTypeCompose", [
@@ -106,6 +106,14 @@ export const compose = pgTable("compose", {
 	serverId: text("serverId").references(() => server.serverId, {
 		onDelete: "cascade",
 	}),
+	dopplerEnabled: boolean("dopplerEnabled").default(false),
+	dopplerServiceToken: text("dopplerServiceToken"),
+	dopplerProject: text("dopplerProject"),
+	dopplerConfig: text("dopplerConfig"),
+	dopplerMergeStrategy: dopplerMergeStrategy("dopplerMergeStrategy").default(
+		"doppler_priority",
+	),
+	dopplerLastSyncAt: text("dopplerLastSyncAt"),
 });
 
 export const composeRelations = relations(compose, ({ one, many }) => ({
@@ -155,6 +163,19 @@ const createSchema = createInsertSchema(compose, {
 	composePath: z.string().min(1),
 	composeType: z.enum(["docker-compose", "stack"]).optional(),
 	watchPaths: z.array(z.string()).optional(),
+	dopplerEnabled: z.boolean().optional(),
+	dopplerServiceToken: z.string().optional(),
+	dopplerProject: z.string().optional(),
+	dopplerConfig: z.string().optional(),
+	dopplerMergeStrategy: z
+		.enum([
+			"doppler_priority",
+			"manual_priority",
+			"doppler_only",
+			"manual_only",
+		])
+		.optional(),
+	dopplerLastSyncAt: z.string().optional(),
 });
 
 export const apiCreateCompose = createSchema.pick({

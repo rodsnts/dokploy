@@ -16,6 +16,13 @@ export const certificateType = pgEnum("certificateType", [
 
 export const triggerType = pgEnum("triggerType", ["push", "tag"]);
 
+export const dopplerMergeStrategy = pgEnum("dopplerMergeStrategy", [
+	"doppler_priority",
+	"manual_priority",
+	"doppler_only",
+	"manual_only",
+]);
+
 export interface HealthCheckSwarm {
 	Test?: string[] | undefined;
 	Interval?: number | undefined;

@@ -16,6 +16,7 @@ import { mounts } from "./mount";
 import { server } from "./server";
 import {
 	applicationStatus,
+	dopplerMergeStrategy,
 	type EndpointSpecSwarm,
 	EndpointSpecSwarmSchema,
 	type HealthCheckSwarm,
@@ -82,6 +83,14 @@ export const mongo = pgTable("mongo", {
 		onDelete: "cascade",
 	}),
 	replicaSets: boolean("replicaSets").default(false),
+	dopplerEnabled: boolean("dopplerEnabled").default(false),
+	dopplerServiceToken: text("dopplerServiceToken"),
+	dopplerProject: text("dopplerProject"),
+	dopplerConfig: text("dopplerConfig"),
+	dopplerMergeStrategy: dopplerMergeStrategy("dopplerMergeStrategy").default(
+		"doppler_priority",
+	),
+	dopplerLastSyncAt: text("dopplerLastSyncAt"),
 });
 
 export const mongoRelations = relations(mongo, ({ one, many }) => ({
@@ -133,6 +142,19 @@ const createSchema = createInsertSchema(mongo, {
 	networkSwarm: NetworkSwarmSchema.nullable(),
 	stopGracePeriodSwarm: z.bigint().nullable(),
 	endpointSpecSwarm: EndpointSpecSwarmSchema.nullable(),
+	dopplerEnabled: z.boolean().optional(),
+	dopplerServiceToken: z.string().optional(),
+	dopplerProject: z.string().optional(),
+	dopplerConfig: z.string().optional(),
+	dopplerMergeStrategy: z
+		.enum([
+			"doppler_priority",
+			"manual_priority",
+			"doppler_only",
+			"manual_only",
+		])
+		.optional(),
+	dopplerLastSyncAt: z.string().optional(),
 });
 
 export const apiCreateMongo = createSchema

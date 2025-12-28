@@ -11,6 +11,7 @@ import { mysql } from "./mysql";
 import { postgres } from "./postgres";
 import { projects } from "./project";
 import { redis } from "./redis";
+import { dopplerMergeStrategy } from "./shared";
 
 export const environments = pgTable("environment", {
 	environmentId: text("environmentId")
@@ -27,6 +28,14 @@ export const environments = pgTable("environment", {
 		.notNull()
 		.references(() => projects.projectId, { onDelete: "cascade" }),
 	isDefault: boolean("isDefault").notNull().default(false),
+	dopplerEnabled: boolean("dopplerEnabled").default(false),
+	dopplerServiceToken: text("dopplerServiceToken"),
+	dopplerProject: text("dopplerProject"),
+	dopplerConfig: text("dopplerConfig"),
+	dopplerMergeStrategy: dopplerMergeStrategy("dopplerMergeStrategy").default(
+		"doppler_priority",
+	),
+	dopplerLastSyncAt: text("dopplerLastSyncAt"),
 });
 
 export const environmentRelations = relations(
@@ -50,6 +59,19 @@ const createSchema = createInsertSchema(environments, {
 	environmentId: z.string().min(1),
 	name: z.string().min(1),
 	description: z.string().optional(),
+	dopplerEnabled: z.boolean().optional(),
+	dopplerServiceToken: z.string().optional(),
+	dopplerProject: z.string().optional(),
+	dopplerConfig: z.string().optional(),
+	dopplerMergeStrategy: z
+		.enum([
+			"doppler_priority",
+			"manual_priority",
+			"doppler_only",
+			"manual_only",
+		])
+		.optional(),
+	dopplerLastSyncAt: z.string().optional(),
 });
 
 export const apiCreateEnvironment = createSchema.pick({
