@@ -23,6 +23,7 @@ import {
 import { Toggle } from "@/components/ui/toggle";
 import { api } from "@/utils/api";
 import type { ServiceType } from "../advanced/show-resources";
+import { DopplerIntegration } from "./doppler-integration";
 
 const addEnvironmentSchema = z.object({
 	environment: z.string(),
@@ -63,6 +64,9 @@ export const ShowEnvironment = ({ id, type }: Props) => {
 	const { mutateAsync, isLoading } = mutationMap[type]
 		? mutationMap[type]()
 		: api.mongo.update.useMutation();
+
+	const { mutateAsync: updateDoppler, isLoading: isUpdatingDoppler } =
+		mutationMap[type] ? mutationMap[type]() : api.mongo.update.useMutation();
 
 	const form = useForm<EnvironmentSchema>({
 		defaultValues: {
@@ -108,7 +112,33 @@ export const ShowEnvironment = ({ id, type }: Props) => {
 		});
 	};
 
-	// Add keyboard shortcut for Ctrl+S/Cmd+S
+	const handleSaveDoppler = async (dopplerData: {
+		dopplerEnabled: boolean;
+		dopplerServiceToken?: string;
+		dopplerProject?: string;
+		dopplerConfig?: string;
+		dopplerMergeStrategy?: string;
+	}) => {
+		await updateDoppler({
+			mongoId: id || "",
+			postgresId: id || "",
+			redisId: id || "",
+			mysqlId: id || "",
+			mariadbId: id || "",
+			composeId: id || "",
+			dopplerEnabled: dopplerData.dopplerEnabled,
+			dopplerServiceToken: dopplerData.dopplerServiceToken || null,
+			dopplerProject: dopplerData.dopplerProject || null,
+			dopplerConfig: dopplerData.dopplerConfig || null,
+			dopplerMergeStrategy: dopplerData.dopplerMergeStrategy as
+				| "doppler_priority"
+				| "manual_priority"
+				| "doppler_only"
+				| "manual_only"
+				| undefined,
+		});
+		await refetch();
+	};
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if ((e.ctrlKey || e.metaKey) && e.key === "s" && !isLoading) {
@@ -208,6 +238,12 @@ PORT=3000
 					</Form>
 				</CardContent>
 			</Card>
+
+			<DopplerIntegration
+				data={data}
+				onSave={handleSaveDoppler}
+				isLoading={isUpdatingDoppler}
+			/>
 		</div>
 	);
 };

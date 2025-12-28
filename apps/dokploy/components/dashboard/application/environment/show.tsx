@@ -16,6 +16,7 @@ import {
 import { Secrets } from "@/components/ui/secrets";
 import { Switch } from "@/components/ui/switch";
 import { api } from "@/utils/api";
+import { DopplerIntegration } from "./doppler-integration";
 
 const addEnvironmentSchema = z.object({
 	env: z.string(),
@@ -33,6 +34,11 @@ interface Props {
 export const ShowEnvironment = ({ applicationId }: Props) => {
 	const { mutateAsync, isLoading } =
 		api.application.saveEnvironment.useMutation();
+
+	const { mutateAsync: updateApplication, isLoading: isUpdatingDoppler } =
+		api.application.update.useMutation();
+
+	const utils = api.useUtils();
 
 	const { data, refetch } = api.application.one.useQuery(
 		{
@@ -101,6 +107,30 @@ export const ShowEnvironment = ({ applicationId }: Props) => {
 		});
 	};
 
+	const handleSaveDoppler = async (dopplerData: {
+		dopplerEnabled: boolean;
+		dopplerServiceToken?: string;
+		dopplerProject?: string;
+		dopplerConfig?: string;
+		dopplerMergeStrategy?: string;
+	}) => {
+		await updateApplication({
+			applicationId,
+			dopplerEnabled: dopplerData.dopplerEnabled,
+			dopplerServiceToken: dopplerData.dopplerServiceToken || null,
+			dopplerProject: dopplerData.dopplerProject || null,
+			dopplerConfig: dopplerData.dopplerConfig || null,
+			dopplerMergeStrategy: dopplerData.dopplerMergeStrategy as
+				| "doppler_priority"
+				| "manual_priority"
+				| "doppler_only"
+				| "manual_only"
+				| undefined,
+		});
+		await refetch();
+		await utils.application.one.invalidate({ applicationId });
+	};
+
 	// Add keyboard shortcut for Ctrl+S/Cmd+S
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -117,113 +147,121 @@ export const ShowEnvironment = ({ applicationId }: Props) => {
 	}, [form, onSubmit, isLoading]);
 
 	return (
-		<Card className="bg-background px-6 pb-6">
-			<Form {...form}>
-				<form
-					onSubmit={form.handleSubmit(onSubmit)}
-					className="flex w-full flex-col gap-4"
-				>
-					<Secrets
-						name="env"
-						title="Environment Settings"
-						description={
-							<span>
-								You can add environment variables to your resource.
-								{hasChanges && (
-									<span className="text-yellow-500 ml-2">
-										(You have unsaved changes)
+		<div className="flex flex-col gap-4">
+			<Card className="bg-background px-6 pb-6">
+				<Form {...form}>
+					<form
+						onSubmit={form.handleSubmit(onSubmit)}
+						className="flex w-full flex-col gap-4"
+					>
+						<Secrets
+							name="env"
+							title="Environment Settings"
+							description={
+								<span>
+									You can add environment variables to your resource.
+									{hasChanges && (
+										<span className="text-yellow-500 ml-2">
+											(You have unsaved changes)
+										</span>
+									)}
+								</span>
+							}
+							placeholder={["NODE_ENV=production", "PORT=3000"].join("\n")}
+						/>
+						{data?.buildType === "dockerfile" && (
+							<Secrets
+								name="buildArgs"
+								title="Build-time Arguments"
+								description={
+									<span>
+										Arguments are available only at build-time. See
+										documentation&nbsp;
+										<a
+											className="text-primary"
+											href="https://docs.docker.com/build/building/variables/"
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											here
+										</a>
+										.
 									</span>
-								)}
-							</span>
-						}
-						placeholder={["NODE_ENV=production", "PORT=3000"].join("\n")}
-					/>
-					{data?.buildType === "dockerfile" && (
-						<Secrets
-							name="buildArgs"
-							title="Build-time Arguments"
-							description={
-								<span>
-									Arguments are available only at build-time. See
-									documentation&nbsp;
-									<a
-										className="text-primary"
-										href="https://docs.docker.com/build/building/variables/"
-										target="_blank"
-										rel="noopener noreferrer"
-									>
-										here
-									</a>
-									.
-								</span>
-							}
-							placeholder="NPM_TOKEN=xyz"
-						/>
-					)}
-					{data?.buildType === "dockerfile" && (
-						<Secrets
-							name="buildSecrets"
-							title="Build-time Secrets"
-							description={
-								<span>
-									Secrets are specially designed for sensitive information and
-									are only available at build-time. See documentation&nbsp;
-									<a
-										className="text-primary"
-										href="https://docs.docker.com/build/building/secrets/"
-										target="_blank"
-										rel="noopener noreferrer"
-									>
-										here
-									</a>
-									.
-								</span>
-							}
-							placeholder="NPM_TOKEN=xyz"
-						/>
-					)}
-					{data?.buildType === "dockerfile" && (
-						<FormField
-							control={form.control}
-							name="createEnvFile"
-							render={({ field }) => (
-								<FormItem className="flex flex-row items-center justify-between p-3 border rounded-lg shadow-sm">
-									<div className="space-y-0.5">
-										<FormLabel>Create Environment File</FormLabel>
-										<FormDescription>
-											When enabled, an .env file will be created in the same
-											directory as your Dockerfile during the build process.
-											Disable this if you don't want to generate an environment
-											file.
-										</FormDescription>
-									</div>
-									<FormControl>
-										<Switch
-											checked={field.value}
-											onCheckedChange={field.onChange}
-										/>
-									</FormControl>
-								</FormItem>
-							)}
-						/>
-					)}
-					<div className="flex flex-row justify-end gap-2">
-						{hasChanges && (
-							<Button type="button" variant="outline" onClick={handleCancel}>
-								Cancel
-							</Button>
+								}
+								placeholder="NPM_TOKEN=xyz"
+							/>
 						)}
-						<Button
-							isLoading={isLoading}
-							className="w-fit"
-							type="submit"
-							disabled={!hasChanges}
-						>
-							Save
-						</Button>
-					</div>
-				</form>
-			</Form>
-		</Card>
+						{data?.buildType === "dockerfile" && (
+							<Secrets
+								name="buildSecrets"
+								title="Build-time Secrets"
+								description={
+									<span>
+										Secrets are specially designed for sensitive information and
+										are only available at build-time. See documentation&nbsp;
+										<a
+											className="text-primary"
+											href="https://docs.docker.com/build/building/secrets/"
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											here
+										</a>
+										.
+									</span>
+								}
+								placeholder="NPM_TOKEN=xyz"
+							/>
+						)}
+						{data?.buildType === "dockerfile" && (
+							<FormField
+								control={form.control}
+								name="createEnvFile"
+								render={({ field }) => (
+									<FormItem className="flex flex-row items-center justify-between p-3 border rounded-lg shadow-sm">
+										<div className="space-y-0.5">
+											<FormLabel>Create Environment File</FormLabel>
+											<FormDescription>
+												When enabled, an .env file will be created in the same
+												directory as your Dockerfile during the build process.
+												Disable this if you don't want to generate an
+												environment file.
+											</FormDescription>
+										</div>
+										<FormControl>
+											<Switch
+												checked={field.value}
+												onCheckedChange={field.onChange}
+											/>
+										</FormControl>
+									</FormItem>
+								)}
+							/>
+						)}
+						<div className="flex flex-row justify-end gap-2">
+							{hasChanges && (
+								<Button type="button" variant="outline" onClick={handleCancel}>
+									Cancel
+								</Button>
+							)}
+							<Button
+								isLoading={isLoading}
+								className="w-fit"
+								type="submit"
+								disabled={!hasChanges}
+							>
+								Save
+							</Button>
+						</div>
+					</form>
+				</Form>
+			</Card>
+
+			<DopplerIntegration
+				data={data}
+				onSave={handleSaveDoppler}
+				isLoading={isUpdatingDoppler}
+			/>
+		</div>
 	);
 };

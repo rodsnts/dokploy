@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { DopplerIntegration } from "@/components/dashboard/application/environment/doppler-integration";
 import { AlertBlock } from "@/components/shared/alert-block";
 import { CodeEditor } from "@/components/shared/code-editor";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/utils/api";
 
 const updateProjectSchema = z.object({
@@ -43,7 +45,9 @@ export const ProjectEnvironment = ({ projectId, children }: Props) => {
 	const utils = api.useUtils();
 	const { mutateAsync, error, isError, isLoading } =
 		api.project.update.useMutation();
-	const { data } = api.project.one.useQuery(
+	const { mutateAsync: updateDoppler, isLoading: isUpdatingDoppler } =
+		api.project.update.useMutation();
+	const { data, refetch } = api.project.one.useQuery(
 		{
 			projectId,
 		},
@@ -79,6 +83,30 @@ export const ProjectEnvironment = ({ projectId, children }: Props) => {
 				toast.error("Error updating the env");
 			})
 			.finally(() => {});
+	};
+
+	const handleSaveDoppler = async (dopplerData: {
+		dopplerEnabled: boolean;
+		dopplerServiceToken?: string;
+		dopplerProject?: string;
+		dopplerConfig?: string;
+		dopplerMergeStrategy?: string;
+	}) => {
+		await updateDoppler({
+			projectId,
+			dopplerEnabled: dopplerData.dopplerEnabled,
+			dopplerServiceToken: dopplerData.dopplerServiceToken || null,
+			dopplerProject: dopplerData.dopplerProject || null,
+			dopplerConfig: dopplerData.dopplerConfig || null,
+			dopplerMergeStrategy: dopplerData.dopplerMergeStrategy as
+				| "doppler_priority"
+				| "manual_priority"
+				| "doppler_only"
+				| "manual_only"
+				| undefined,
+		});
+		await refetch();
+		await utils.project.one.invalidate({ projectId });
 	};
 
 	// Add keyboard shortcut for Ctrl+S/Cmd+S
@@ -117,52 +145,68 @@ export const ProjectEnvironment = ({ projectId, children }: Props) => {
 						services of this project.
 					</DialogDescription>
 				</DialogHeader>
-				{isError && <AlertBlock type="error">{error?.message}</AlertBlock>}
-				<AlertBlock type="info">
-					Use this syntax to reference project-level variables in your service
-					environments: <code>DATABASE_URL=${"{{project.DATABASE_URL}}"}</code>
-				</AlertBlock>
-				<div className="grid gap-4">
-					<div className="grid items-center gap-4">
-						<Form {...form}>
-							<form
-								onSubmit={form.handleSubmit(onSubmit)}
-								className="grid w-full gap-4 "
-							>
-								<FormField
-									control={form.control}
-									name="env"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Environment variables</FormLabel>
-											<FormControl>
-												<CodeEditor
-													lineWrapping
-													language="properties"
-													wrapperClassName="h-[35rem] font-mono"
-													placeholder={`NODE_ENV=production
+				<Tabs defaultValue="manual" className="w-full">
+					<TabsList className="grid w-full grid-cols-2">
+						<TabsTrigger value="manual">Manual Variables</TabsTrigger>
+						<TabsTrigger value="doppler">Doppler Integration</TabsTrigger>
+					</TabsList>
+					<TabsContent value="manual" className="space-y-4">
+						{isError && <AlertBlock type="error">{error?.message}</AlertBlock>}
+						<AlertBlock type="info">
+							Use this syntax to reference project-level variables in your
+							service environments:{" "}
+							<code>DATABASE_URL=${"{{project.DATABASE_URL}}"}</code>
+						</AlertBlock>
+						<div className="grid gap-4">
+							<div className="grid items-center gap-4">
+								<Form {...form}>
+									<form
+										onSubmit={form.handleSubmit(onSubmit)}
+										className="grid w-full gap-4 "
+									>
+										<FormField
+											control={form.control}
+											name="env"
+											render={({ field }) => (
+												<FormItem>
+													<FormLabel>Environment variables</FormLabel>
+													<FormControl>
+														<CodeEditor
+															lineWrapping
+															language="properties"
+															wrapperClassName="h-[35rem] font-mono"
+															placeholder={`NODE_ENV=production
 PORT=3000
 
                                                     `}
-													{...field}
-												/>
-											</FormControl>
+															{...field}
+														/>
+													</FormControl>
 
-											<pre>
-												<FormMessage />
-											</pre>
-										</FormItem>
-									)}
-								/>
-								<DialogFooter>
-									<Button isLoading={isLoading} type="submit">
-										Update
-									</Button>
-								</DialogFooter>
-							</form>
-						</Form>
-					</div>
-				</div>
+													<pre>
+														<FormMessage />
+													</pre>
+												</FormItem>
+											)}
+										/>
+										<DialogFooter>
+											<Button isLoading={isLoading} type="submit">
+												Update
+											</Button>
+										</DialogFooter>
+									</form>
+								</Form>
+							</div>
+						</div>
+					</TabsContent>
+					<TabsContent value="doppler">
+						<DopplerIntegration
+							data={data}
+							onSave={handleSaveDoppler}
+							isLoading={isUpdatingDoppler}
+						/>
+					</TabsContent>
+				</Tabs>
 			</DialogContent>
 		</Dialog>
 	);
