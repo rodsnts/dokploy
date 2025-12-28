@@ -74,6 +74,12 @@ const baseApp: ApplicationNested = {
 		createdAt: "",
 		description: "",
 		projectId: "",
+		dopplerEnabled: null,
+		dopplerServiceToken: null,
+		dopplerProject: null,
+		dopplerConfig: null,
+		dopplerMergeStrategy: null,
+		dopplerLastSyncAt: null,
 		project: {
 			env: "",
 			organizationId: "",
@@ -81,6 +87,12 @@ const baseApp: ApplicationNested = {
 			description: "",
 			createdAt: "",
 			projectId: "",
+			dopplerEnabled: null,
+			dopplerServiceToken: null,
+			dopplerProject: null,
+			dopplerConfig: null,
+			dopplerMergeStrategy: null,
+			dopplerLastSyncAt: null,
 		},
 	},
 	buildArgs: null,
@@ -146,6 +158,12 @@ const baseApp: ApplicationNested = {
 	dockerContextPath: null,
 	rollbackActive: false,
 	stopGracePeriodSwarm: null,
+	dopplerEnabled: null,
+	dopplerServiceToken: null,
+	dopplerProject: null,
+	dopplerConfig: null,
+	dopplerMergeStrategy: null,
+	dopplerLastSyncAt: null,
 };
 
 describe("unzipDrop using real zip files", () => {

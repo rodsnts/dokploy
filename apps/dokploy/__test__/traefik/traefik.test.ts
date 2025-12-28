@@ -56,6 +56,12 @@ const baseApp: ApplicationNested = {
 		createdAt: "",
 		description: "",
 		projectId: "",
+		dopplerEnabled: null,
+		dopplerServiceToken: null,
+		dopplerProject: null,
+		dopplerConfig: null,
+		dopplerMergeStrategy: null,
+		dopplerLastSyncAt: null,
 		project: {
 			env: "",
 			organizationId: "",
@@ -63,6 +69,12 @@ const baseApp: ApplicationNested = {
 			description: "",
 			createdAt: "",
 			projectId: "",
+			dopplerEnabled: null,
+			dopplerServiceToken: null,
+			dopplerProject: null,
+			dopplerConfig: null,
+			dopplerMergeStrategy: null,
+			dopplerLastSyncAt: null,
 		},
 	},
 	buildPath: "/",
@@ -124,6 +136,12 @@ const baseApp: ApplicationNested = {
 	username: null,
 	dockerContextPath: null,
 	stopGracePeriodSwarm: null,
+	dopplerEnabled: null,
+	dopplerServiceToken: null,
+	dopplerProject: null,
+	dopplerConfig: null,
+	dopplerMergeStrategy: null,
+	dopplerLastSyncAt: null,
 };
 
 const baseDomain: Domain = {
